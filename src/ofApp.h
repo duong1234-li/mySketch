@@ -4,6 +4,10 @@
 #include "ofxGui.h"
 #include <memory>
 
+struct libinput;
+struct libinput_device;
+struct libinput_event;
+
 class ofApp : public ofBaseApp{
 
 	public:
@@ -63,6 +67,16 @@ class ofApp : public ofBaseApp{
 		void fillAt(int x, int y);
 		void setupTabletPressureInput();
 		void pollTabletPressure();
+		void resetSimulatedPressure();
+		void updateSimulatedPressure();
+		float effectivePressure() const;
+		void discoverTabletDevice();
+		void drainTabletEvents();
+		void applyTabletEvent(struct libinput_event *event);
+		void endTabletContact();
+		void handleTabletDeviceRemoved(struct libinput_device *device);
+		static int openTabletDevice(const char *path, int flags, void *userData);
+		static void closeTabletDevice(int fd, void *userData);
 		void appendStrokePoint(const ofVec2f &point, float pressure);
 		void undoLastStroke();
 		void clearCanvas();
@@ -89,12 +103,7 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
 
 	private:
-		struct TabletPressureAxis {
-			int deviceId;
-			int axis;
-			double minimum;
-			double maximum;
-		};
+		static constexpr float tabletContactThreshold = 0.02f;
 
 		std::vector<std::unique_ptr<Layer>> layers;
 		Stroke activeStroke;
@@ -104,17 +113,20 @@ class ofApp : public ofBaseApp{
 		uint64_t pendingStrokeStartedAt = 0;
 		bool draggingLayerOpacity = false;
 		bool fillReadbackFlipped = false;
-		void *tabletDisplay = nullptr;
-		int tabletEventOpcode = -1;
-		int tabletPressureDeviceId = -1;
+		struct libinput *libinputContext = nullptr;
+		struct libinput_device *libinputDevice = nullptr;
+		std::vector<std::string> libinputDevicePaths;
+		std::string libinputDevicePath;
+		uint64_t libinputRescanAt = 0;
+		bool libinputPermissionDenied = false;
+		bool tabletDeviceFound = false;
 		bool tabletPressureSourceActive = false;
+		bool tabletPressureHeld = false;
 		float tabletPressure = 1.0f;
-		bool tabletPointerPositionValid = false;
-		bool tabletStrokeInput = false;
-		bool tabletStrokePositionInitialized = false;
-		ofVec2f tabletPointerPosition;
-		std::vector<TabletPressureAxis> tabletPressureAxes;
-		std::vector<int> auxiliaryTabletDeviceIds;
+		bool simulatedPressureValid = false;
+		float simulatedPressure = 1.0f;
+		ofVec2f simulatedPressurePosition;
+		uint64_t simulatedPressureUpdatedAt = 0;
 		ofFbo canvas;
 		ofFbo strokeLayer;
 		ofFbo exportBuffer;
@@ -137,6 +149,8 @@ class ofApp : public ofBaseApp{
 		ofParameter<bool> fillTool;
 		ofParameter<float> brushSize;
 		ofParameter<int> brushOpacity;
+		ofParameter<float> pressureSensitivity;
+		ofParameter<float> pressureSimulation;
 		ofParameter<int> fillTolerance;
 		ofParameter<bool> eraser;
 		ofParameter<void> undoAction;
