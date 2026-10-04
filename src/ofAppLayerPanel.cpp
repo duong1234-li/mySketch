@@ -3,16 +3,19 @@
 //--------------------------------------------------------------
 void ofApp::updateLayerPanelLayout(){
 	const float panelWidth = 226.0f;
-	const float panelX = std::max(8.0f, ofGetWidth() - panelWidth - 18.0f);
-	const float rowsY = 84.0f;
+	float panelX = layerPanelBounds.x;
+	float panelY = layerPanelBounds.y;
+	panelX = layersPanel.getPosition().x;
+	panelY = layersPanel.getPosition().y;
+	const float rowsY = panelY + 68.0f;
 	const float rowHeight = 22.0f;
-	layerNewProjectBounds.set(panelX + 8, 50, 52, 24);
-	layerAddBounds.set(panelX + 64, 50, 24, 24);
-	layerRemoveBounds.set(panelX + 90, 50, 24, 24);
-	layerUpBounds.set(panelX + 116, 50, 24, 24);
-	layerDownBounds.set(panelX + 142, 50, 24, 24);
-	layerAddImageBounds.set(panelX + 168, 50, 24, 24);
-	layerRemoveImageBounds.set(panelX + 194, 50, 24, 24);
+	layerNewProjectBounds.set(panelX + 8, panelY + 34, 52, 24);
+	layerAddBounds.set(panelX + 64, panelY + 34, 24, 24);
+	layerRemoveBounds.set(panelX + 90, panelY + 34, 24, 24);
+	layerUpBounds.set(panelX + 116, panelY + 34, 24, 24);
+	layerDownBounds.set(panelX + 142, panelY + 34, 24, 24);
+	layerAddImageBounds.set(panelX + 168, panelY + 34, 24, 24);
+	layerRemoveImageBounds.set(panelX + 194, panelY + 34, 24, 24);
 
 	layerPanelRows.clear();
 	layerVisibilityBounds.assign(layers.size(), ofRectangle());
@@ -28,7 +31,7 @@ void ofApp::updateLayerPanelLayout(){
 		rowsY + layerPanelRows.size() * rowHeight + 42.0f - 16.0f);
 	const float panelHeight = std::min(desiredHeight,
 		std::max(120.0f, ofGetHeight() - 32.0f));
-	layerPanelBounds.set(panelX, 16, panelWidth, panelHeight);
+	layerPanelBounds.set(panelX, panelY, panelWidth, panelHeight);
 	const float opacityY = layerPanelBounds.y + panelHeight - 20.0f;
 	layerPanelListBounds.set(panelX + 4, rowsY, panelWidth - 8,
 		std::max(0.0f, opacityY - 14.0f - rowsY));
@@ -51,12 +54,6 @@ void ofApp::updateLayerPanelLayout(){
 void ofApp::drawLayerPanel(){
 	updateLayerPanelLayout();
 	ofPushStyle();
-	ofSetColor(8, 15, 20, 238);
-	ofDrawRectangle(layerPanelBounds);
-	ofSetColor(28, 130, 142);
-	ofDrawRectangle(layerPanelBounds.x, layerPanelBounds.y, layerPanelBounds.width, 28);
-	ofSetColor(235, 242, 240);
-	ofDrawBitmapString("LAYERS", layerPanelBounds.x + 10, layerPanelBounds.y + 19);
 
 	auto drawButton = [](const ofRectangle &bounds, const std::string &label){
 		ofSetColor(35, 57, 62);

@@ -44,6 +44,10 @@ void ofApp::keyReleased(int key){
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y ){
 	pollTabletPressure();
+	{
+		ofMouseEventArgs args(ofMouseEventArgs::Moved, x, y);
+		layersPanel.mouseMoved(args);
+	}
 }
 
 //--------------------------------------------------------------
@@ -52,6 +56,10 @@ void ofApp::mouseDragged(int x, int y, int button){
 	if (draggingLayerOpacity) {
 		setActiveLayerOpacity(x);
 		return;
+	}
+	{
+		ofMouseEventArgs args(ofMouseEventArgs::Dragged, x, y, button);
+		layersPanel.mouseDragged(args);
 	}
 	if (draggingLayerTransform) {
 		const ofVec2f mousePos = screenToCanvasPoint(x, y);
@@ -100,8 +108,14 @@ void ofApp::mouseDragged(int x, int y, int button){
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
 	pollTabletPressure();
-	if (handleLayerPanelPress(x, y) || gui.getShape().inside(x, y) ||
-		!canvasBounds.inside(x, y)) {
+	{
+		ofMouseEventArgs args(ofMouseEventArgs::Pressed, x, y, button);
+		layersPanel.mousePressed(args);
+	}
+	if (handleLayerPanelPress(x, y)) {
+		return;
+	}
+	if (gui.getShape().inside(x, y) || layersPanel.getShape().inside(x, y) || !canvasBounds.inside(x, y)) {
 		return;
 	}
 	const ofVec2f canvasPoint = screenToCanvasPoint(x, y);
@@ -219,6 +233,10 @@ void ofApp::mouseReleased(int x, int y, int button){
 	if (draggingLayerOpacity) {
 		draggingLayerOpacity = false;
 		return;
+	}
+	{
+		ofMouseEventArgs args(ofMouseEventArgs::Released, x, y, button);
+		layersPanel.mouseReleased(args);
 	}
 	if (draggingLayerTransform) {
 		draggingLayerTransform = false;

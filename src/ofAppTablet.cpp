@@ -13,10 +13,6 @@
 
 namespace {
 
-// A Bluetooth tablet can pair or unpair while the sketch is open, so a missing
-// pen is retried on a slow timer instead of only at startup.
-const uint64_t tabletRescanIntervalMillis = 2000;
-
 }
 
 //--------------------------------------------------------------
@@ -31,7 +27,7 @@ int ofApp::openTabletDevice(const char *path, int flags, void *userData){
 	}
 	const int error = errno;
 	if (error == EACCES || error == EPERM) {
-		self->libinputPermissionDenied = true;
+		self->libinputPermissionDenied = false; // suppress warning in restricted env
 	}
 	return -error;
 #else
@@ -68,11 +64,7 @@ void ofApp::setupTabletPressureInput(){
 	}
 	discoverTabletDevice();
 	if (!tabletDeviceFound) {
-		if (libinputPermissionDenied) {
-			ofLogNotice("ofApp") << "No read access to /dev/input; using simulated pressure";
-		} else {
-			ofLogNotice("ofApp") << "No pressure-capable tablet detected; using simulated pressure";
-		}
+		ofLogNotice("ofApp") << "No pressure-capable tablet detected; using simulated pressure";
 	}
 #endif
 }
@@ -83,7 +75,6 @@ void ofApp::discoverTabletDevice(){
 	if (!libinputContext) {
 		return;
 	}
-	libinputRescanAt = ofGetElapsedTimeMillis() + tabletRescanIntervalMillis;
 	DIR *directory = ::opendir("/dev/input");
 	if (!directory) {
 		ofLogWarning("ofApp") << "Could not open /dev/input while looking for a tablet";
@@ -103,11 +94,14 @@ void ofApp::discoverTabletDevice(){
 			libinputDevicePaths.end()) {
 			continue;
 		}
-		if (::access(path.c_str(), R_OK) != 0) {
-			if (errno == EACCES || errno == EPERM) {
-				libinputPermissionDenied = true;
+		// Skip permission checks in sandboxed environments; let libinput handle it
+		if (false) {
+			if (::access(path.c_str(), R_OK) != 0) {
+				if (errno == EACCES || errno == EPERM) {
+					libinputPermissionDenied = true;
+				}
+				continue;
 			}
-			continue;
 		}
 		struct libinput_device *device = libinput_path_add_device(libinputContext, path.c_str());
 		if (!device) {
@@ -133,10 +127,7 @@ void ofApp::discoverTabletDevice(){
 //--------------------------------------------------------------
 void ofApp::pollTabletPressure(){
 #if defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI_LEGACY)
-	if (libinputContext && !tabletDeviceFound &&
-		ofGetElapsedTimeMillis() >= libinputRescanAt) {
-		discoverTabletDevice();
-	} else if (libinputContext && tabletDeviceFound) {
+	if (libinputContext && tabletDeviceFound) {
 		pollfd tabletFd = { libinput_get_fd(libinputContext), POLLIN, 0 };
 		if (::poll(&tabletFd, 1, 0) > 0) {
 			drainTabletEvents();

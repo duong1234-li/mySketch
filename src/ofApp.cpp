@@ -46,6 +46,11 @@ void ofApp::setup(){
 	paintbrushTool.addListener(this, &ofApp::paintbrushToolChanged);
 	fillTool.addListener(this, &ofApp::fillToolChanged);
 	moveResizeTool.addListener(this, &ofApp::moveResizeToolChanged);
+	layersPanel.setup("LAYERS", ofxPanelDefaultFilename, ofGetWidth() - 226 - 18, 16);
+	layersPanel.setHeaderBackgroundColor(ofColor(28, 130, 142));
+	layersPanel.setBackgroundColor(ofColor(8, 15, 20, 238));
+	layersPanel.setBorderColor(ofColor(55, 100, 108));
+	layersPanel.setTextColor(ofColor(235, 242, 240));
 	addLayer();
 	setupTabletPressureInput();
 	resetSimulatedPressure();
@@ -109,6 +114,7 @@ void ofApp::draw(){
 	}
 
 	gui.draw();
+	layersPanel.draw();
 	drawLayerPanel();
 	ofSetColor(220, 230, 232);
 	ofDrawBitmapString("1 BRUSH  2 PEN  3 PENCIL  4 MARKER  5 PAINTBRUSH  6 FILL  7 MOVE/RESIZE  E ERASER  I IMG  D DEL IMG  R RESET IMG", 16, ofGetHeight() - 16);

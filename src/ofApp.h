@@ -142,10 +142,13 @@ class ofApp : public ofBaseApp{
 		int pendingMotionSamples = 0;
 		uint64_t pendingStrokeStartedAt = 0;
 		bool draggingLayerOpacity = false;
+		bool draggingLayerPanel = false;
 		bool draggingLayerTransform = false;
 		bool resizingLayerTransform = false;
 		ofVec2f layerTransformDragStart;
 		ofVec2f layerTransformPositionStart;
+		ofVec2f layerPanelDragStart;
+		ofVec2f layerPanelPositionStart;
 		ofVec2f transformResizeStart;
 		ofVec2f transformResizeAnchor;
 		ofVec2f transformResizeLocalAnchor;
@@ -187,6 +190,7 @@ class ofApp : public ofBaseApp{
 		std::vector<ofRectangle> layerVisibilityBounds;
 		float layerPanelScrollOffset = 0.0f;
 		ofxPanel gui;
+		ofxPanel layersPanel;
 		ofParameter<ofColor> brushColor;
 		ofParameter<bool> brushTool;
 		ofParameter<bool> penTool;
