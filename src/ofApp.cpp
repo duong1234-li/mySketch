@@ -26,6 +26,7 @@ void ofApp::setup(){
 	gui.add(markerTool.set("Marker", false));
 	gui.add(paintbrushTool.set("Paintbrush", false));
 	gui.add(fillTool.set("Fill bucket", false));
+	gui.add(moveResizeTool.set("Move/Resize", false));
 	gui.add(brushSize.set("Brush size", 12.0f, 1.0f, 80.0f));
 	gui.add(brushOpacity.set("Opacity", 255, 10, 255));
 	gui.add(pressureSensitivity.set("Pressure", 1.0f, 0.0f, 1.0f));
@@ -44,6 +45,7 @@ void ofApp::setup(){
 	markerTool.addListener(this, &ofApp::markerToolChanged);
 	paintbrushTool.addListener(this, &ofApp::paintbrushToolChanged);
 	fillTool.addListener(this, &ofApp::fillToolChanged);
+	moveResizeTool.addListener(this, &ofApp::moveResizeToolChanged);
 	addLayer();
 	setupTabletPressureInput();
 	resetSimulatedPressure();
@@ -61,11 +63,47 @@ void ofApp::draw(){
 	ofDrawRectangle(canvasBounds.x + 5, canvasBounds.y + 5,
 		canvasBounds.width, canvasBounds.height);
 	ofSetColor(255);
-	canvas.draw(canvasBounds.x, canvasBounds.y);
+	canvas.draw(canvasBounds.x, canvasBounds.y, canvasBounds.width, canvasBounds.height);
+	if (selectedTool == Tool::MoveResize) {
+		const Layer &layer = activeLayer();
+		const ofRectangle content = selectedContentBounds(layer);
+		if (content.width > 0.0f && content.height > 0.0f) {
+			const ofRectangle bounds(
+				canvasBounds.x + (layer.transformPosition.x + content.x * layer.transformScale) * canvasViewScale,
+				canvasBounds.y + (layer.transformPosition.y + content.y * layer.transformScale) * canvasViewScale,
+				content.width * layer.transformScale * canvasViewScale,
+				content.height * layer.transformScale * canvasViewScale);
+			ofPushStyle();
+			ofNoFill();
+			ofSetColor(30, 205, 190);
+			ofSetLineWidth(2.0f);
+			ofDrawRectangle(bounds);
+			ofFill();
+			const float handleSize = 12.0f;
+			const ofVec2f handles[] = {
+				ofVec2f(bounds.x, bounds.y),
+				ofVec2f(bounds.x + bounds.width, bounds.y),
+				ofVec2f(bounds.x + bounds.width, bounds.y + bounds.height),
+				ofVec2f(bounds.x, bounds.y + bounds.height)
+			};
+			for (const auto &handle : handles) {
+				ofSetColor(8, 15, 20);
+				ofDrawRectangle(handle.x - handleSize * 0.5f - 1,
+					handle.y - handleSize * 0.5f - 1, handleSize + 2, handleSize + 2);
+				ofSetColor(220, 250, 245);
+				ofDrawRectangle(handle.x - handleSize * 0.5f,
+					handle.y - handleSize * 0.5f, handleSize, handleSize);
+			}
+			ofPopStyle();
+		}
+	}
 
 	if (drawingStroke) {
+		const Layer &layer = activeLayer();
 		ofPushMatrix();
-		ofTranslate(canvasBounds.x, canvasBounds.y);
+		ofTranslate(canvasBounds.x + layer.transformPosition.x * canvasViewScale,
+			canvasBounds.y + layer.transformPosition.y * canvasViewScale);
+		ofScale(canvasViewScale * layer.transformScale, canvasViewScale * layer.transformScale);
 		drawStroke(activeStroke);
 		ofPopMatrix();
 	}
@@ -73,37 +111,22 @@ void ofApp::draw(){
 	gui.draw();
 	drawLayerPanel();
 	ofSetColor(220, 230, 232);
-	ofDrawBitmapString("1 BRUSH  2 PEN  3 PENCIL  4 MARKER  5 PAINTBRUSH  6 FILL  E ERASER", 16, ofGetHeight() - 16);
+	ofDrawBitmapString("1 BRUSH  2 PEN  3 PENCIL  4 MARKER  5 PAINTBRUSH  6 FILL  7 MOVE/RESIZE  E ERASER  I IMG  D DEL IMG  R RESET IMG", 16, ofGetHeight() - 16);
 }
 
 //--------------------------------------------------------------
 void ofApp::resizeCanvas(int width, int height){
-	const float oldWidth = canvas.isAllocated() ? canvas.getWidth() : 0.0f;
-	const float oldHeight = canvas.isAllocated() ? canvas.getHeight() : 0.0f;
-	canvasBounds.set(286, 52, std::max(1, width - 310), std::max(1, height - 76));
-
-	const float scaleX = oldWidth > 0 ? canvasBounds.width / oldWidth : 1.0f;
-	const float scaleY = oldHeight > 0 ? canvasBounds.height / oldHeight : 1.0f;
-	if (oldWidth > 0 && oldHeight > 0) {
-		for (auto &layer : layers) {
-			for (auto &stroke : layer->strokes) {
-				for (auto &point : stroke.points) {
-					point.x *= scaleX;
-					point.y *= scaleY;
-				}
-				for (auto &span : stroke.fillSpans) {
-					span.x = static_cast<int>(span.x * scaleX);
-					span.y = static_cast<int>(span.y * scaleY);
-					span.width = static_cast<int>(span.width * scaleX);
-				}
-				stroke.width *= (scaleX + scaleY) * 0.5f;
-			}
-		}
-	}
+	const float availableWidth = std::max(1.0f, static_cast<float>(width - 310));
+	const float availableHeight = std::max(1.0f, static_cast<float>(height - 76));
+	canvasViewScale = std::min(availableWidth / canvasWidth, availableHeight / canvasHeight);
+	const float displayWidth = canvasWidth * canvasViewScale;
+	const float displayHeight = canvasHeight * canvasViewScale;
+	canvasBounds.set(286.0f + (availableWidth - displayWidth) * 0.5f,
+		52.0f + (availableHeight - displayHeight) * 0.5f, displayWidth, displayHeight);
 
 	ofFbo::Settings settings;
-	settings.width = static_cast<int>(canvasBounds.width);
-	settings.height = static_cast<int>(canvasBounds.height);
+	settings.width = canvasWidth;
+	settings.height = canvasHeight;
 	settings.internalformat = GL_RGBA;
 	settings.useDepth = false;
 	settings.useStencil = false;

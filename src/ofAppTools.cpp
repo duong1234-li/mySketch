@@ -9,6 +9,7 @@ void ofApp::selectTool(Tool tool){
 	markerTool = tool == Tool::Marker;
 	paintbrushTool = tool == Tool::Paintbrush;
 	fillTool = tool == Tool::Fill;
+	moveResizeTool = tool == Tool::MoveResize;
 	eraser = false;
 }
 
@@ -46,4 +47,10 @@ void ofApp::paintbrushToolChanged(bool &enabled){
 void ofApp::fillToolChanged(bool &enabled){
 	if (enabled) selectTool(Tool::Fill);
 	else if (selectedTool == Tool::Fill) fillTool = true;
+}
+
+//--------------------------------------------------------------
+void ofApp::moveResizeToolChanged(bool &enabled){
+	if (enabled) selectTool(Tool::MoveResize);
+	else if (selectedTool == Tool::MoveResize) moveResizeTool = true;
 }

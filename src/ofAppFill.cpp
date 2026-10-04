@@ -32,8 +32,8 @@ void ofApp::detectFillPixelOrientation(){
 
 //--------------------------------------------------------------
 void ofApp::fillAt(int x, int y){
-	const int width = static_cast<int>(canvasBounds.width);
-	const int height = static_cast<int>(canvasBounds.height);
+	const int width = canvasWidth;
+	const int height = canvasHeight;
 	if (x < 0 || x >= width || y < 0 || y >= height) {
 		return;
 	}
@@ -112,6 +112,13 @@ void ofApp::fillAt(int x, int y){
 	}
 
 	Layer &layer = activeLayer();
+	for (auto &span : fill.fillSpans) {
+		const ofVec2f start = canvasPointToLayer(layer, ofVec2f(span.x, span.y));
+		const ofVec2f end = canvasPointToLayer(layer, ofVec2f(span.x + span.width, span.y));
+		span.x = static_cast<int>(std::lround(start.x));
+		span.y = static_cast<int>(std::lround(start.y));
+		span.width = std::max(1, static_cast<int>(std::lround(end.x)) - span.x);
+	}
 	layer.strokes.push_back(std::move(fill));
 	applyStroke(layer, layer.strokes.back());
 	rebuildCanvas();

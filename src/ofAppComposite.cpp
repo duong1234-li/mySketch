@@ -29,6 +29,15 @@ void ofApp::applyStroke(Layer &layer, const Stroke &stroke){
 void ofApp::rebuildLayer(Layer &layer){
 	layer.image.begin();
 	ofClear(0, 0, 0, 0);
+	ofEnableAlphaBlending();
+	if (layer.hasImage) {
+		ofPushMatrix();
+		ofTranslate(layer.imagePosition.x, layer.imagePosition.y);
+		ofScale(layer.imageScale, layer.imageScale);
+		ofSetColor(255);
+		layer.layerImage.draw(0, 0);
+		ofPopMatrix();
+	}
 	layer.image.end();
 	for (const auto &stroke : layer.strokes) {
 		applyStroke(layer, stroke);
@@ -47,7 +56,9 @@ void ofApp::rebuildCanvas(){
 			glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 			const int opacity = static_cast<int>(layer->opacity * 255.0f);
 			ofSetColor(opacity, opacity, opacity, opacity);
-			layer->image.draw(0, 0);
+			layer->image.draw(layer->transformPosition.x, layer->transformPosition.y,
+				canvasWidth * layer->transformScale,
+				canvasHeight * layer->transformScale);
 		}
 	}
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -57,8 +68,8 @@ void ofApp::rebuildCanvas(){
 //--------------------------------------------------------------
 void ofApp::saveArtwork(){
 	ofFbo::Settings settings;
-	settings.width = static_cast<int>(canvasBounds.width);
-	settings.height = static_cast<int>(canvasBounds.height);
+	settings.width = canvasWidth;
+	settings.height = canvasHeight;
 	settings.internalformat = GL_RGBA;
 	settings.useDepth = false;
 	settings.useStencil = false;

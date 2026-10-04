@@ -136,6 +136,7 @@ void ofApp::finishActiveStroke(){
 		return;
 	}
 	activeLayer().strokes.push_back(activeStroke);
+	selectedLayerItemType = LayerItemType::Layer;
 	renderStroke(activeStroke);
 	drawingStroke = false;
 	pendingStroke = false;

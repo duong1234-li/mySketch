@@ -17,7 +17,13 @@ class ofApp : public ofBaseApp{
 			Pencil,
 			Marker,
 			Paintbrush,
-			Fill
+			Fill,
+			MoveResize
+		};
+
+		enum class LayerItemType {
+			Layer,
+			Image
 		};
 
 		struct FillSpan {
@@ -42,6 +48,18 @@ class ofApp : public ofBaseApp{
 			ofFbo image;
 			bool visible = true;
 			float opacity = 1.0f;
+			ofImage layerImage;
+			bool hasImage = false;
+			ofVec2f imagePosition;
+			float imageScale = 1.0f;
+			ofVec2f transformPosition;
+			float transformScale = 1.0f;
+		};
+
+		struct LayerPanelRow {
+			LayerItemType type;
+			std::size_t layerIndex;
+		ofRectangle bounds;
 		};
 
 		void setup();
@@ -64,6 +82,16 @@ class ofApp : public ofBaseApp{
 		void updateLayerPanelLayout();
 		bool handleLayerPanelPress(int x, int y);
 		void setActiveLayerOpacity(int x);
+		void newProject();
+		ofVec2f screenToCanvasPoint(int x, int y) const;
+		ofVec2f canvasPointToLayer(const Layer &layer, const ofVec2f &point) const;
+		ofRectangle strokeContentBounds(const Stroke &stroke) const;
+		ofRectangle layerContentBounds(const Layer &layer) const;
+		ofRectangle selectedContentBounds(const Layer &layer) const;
+		void addImageToLayer(Layer &layer, const std::string &imagePath);
+		void addImageToActiveLayer(const std::string &imagePath);
+		void removeImageFromActiveLayer();
+		void resetImageTransformForActiveLayer();
 		void fillAt(int x, int y);
 		void setupTabletPressureInput();
 		void pollTabletPressure();
@@ -89,6 +117,7 @@ class ofApp : public ofBaseApp{
 		void markerToolChanged(bool &enabled);
 		void paintbrushToolChanged(bool &enabled);
 		void fillToolChanged(bool &enabled);
+		void moveResizeToolChanged(bool &enabled);
 
 		void keyPressed(int key);
 		void keyReleased(int key);
@@ -98,6 +127,7 @@ class ofApp : public ofBaseApp{
 		void mouseReleased(int x, int y, int button);
 		void mouseEntered(int x, int y);
 		void mouseExited(int x, int y);
+		void mouseScrolled(int x, int y, float scrollX, float scrollY);
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
@@ -112,6 +142,15 @@ class ofApp : public ofBaseApp{
 		int pendingMotionSamples = 0;
 		uint64_t pendingStrokeStartedAt = 0;
 		bool draggingLayerOpacity = false;
+		bool draggingLayerTransform = false;
+		bool resizingLayerTransform = false;
+		ofVec2f layerTransformDragStart;
+		ofVec2f layerTransformPositionStart;
+		ofVec2f transformResizeStart;
+		ofVec2f transformResizeAnchor;
+		ofVec2f transformResizeLocalAnchor;
+		ofVec2f transformResizeParentAnchor;
+		float transformResizeStartScale = 1.0f;
 		bool fillReadbackFlipped = false;
 		struct libinput *libinputContext = nullptr;
 		struct libinput_device *libinputDevice = nullptr;
@@ -131,14 +170,22 @@ class ofApp : public ofBaseApp{
 		ofFbo strokeLayer;
 		ofFbo exportBuffer;
 		ofRectangle canvasBounds;
+		int canvasWidth = 1200;
+		int canvasHeight = 800;
+		float canvasViewScale = 1.0f;
 		ofRectangle layerPanelBounds;
+		ofRectangle layerPanelListBounds;
+		ofRectangle layerNewProjectBounds;
 		ofRectangle layerAddBounds;
 		ofRectangle layerRemoveBounds;
 		ofRectangle layerUpBounds;
 		ofRectangle layerDownBounds;
+		ofRectangle layerAddImageBounds;
+		ofRectangle layerRemoveImageBounds;
 		ofRectangle layerOpacityBounds;
-		std::vector<ofRectangle> layerRowBounds;
+		std::vector<LayerPanelRow> layerPanelRows;
 		std::vector<ofRectangle> layerVisibilityBounds;
+		float layerPanelScrollOffset = 0.0f;
 		ofxPanel gui;
 		ofParameter<ofColor> brushColor;
 		ofParameter<bool> brushTool;
@@ -147,6 +194,7 @@ class ofApp : public ofBaseApp{
 		ofParameter<bool> markerTool;
 		ofParameter<bool> paintbrushTool;
 		ofParameter<bool> fillTool;
+		ofParameter<bool> moveResizeTool;
 		ofParameter<float> brushSize;
 		ofParameter<int> brushOpacity;
 		ofParameter<float> pressureSensitivity;
@@ -159,6 +207,7 @@ class ofApp : public ofBaseApp{
 		ofColor backgroundColor;
 		ofColor paperColor;
 		Tool selectedTool = Tool::Brush;
+		LayerItemType selectedLayerItemType = LayerItemType::Layer;
 		std::size_t activeLayerIndex = 0;
 		int nextLayerNumber = 0;
 		
